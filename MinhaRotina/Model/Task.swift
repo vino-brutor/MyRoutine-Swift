@@ -9,6 +9,8 @@ struct Task {
     var title: String
     var dayOfTheWeek: Int
     var color: Int
+    var time: String
+    var icon: String
 }
 
 enum newTaskSection: Int, CaseIterable {
@@ -16,4 +18,5 @@ enum newTaskSection: Int, CaseIterable {
     case dayOfWeek = 1
     case taskTime = 2
     case taskIcon = 3
+    case taskColor = 4
 }

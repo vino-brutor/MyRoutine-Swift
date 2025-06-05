@@ -9,32 +9,6 @@ import UIKit
 
 class NewTaskVC: UIViewController {
     
-    //dia das semana apara a collection view
-    var weekDays: [DayItemInNewTask] = [
-        .init(name: "Segunda", isSelected: false),
-        .init(name: "Terça", isSelected: false),
-        .init(name: "Quarta", isSelected: false),
-        .init(name: "Quinta", isSelected: false),
-        .init(name: "Sexta", isSelected: false),
-        .init(name: "Sábado", isSelected: false),
-        .init(name: "Domingo", isSelected: false)
-    ]
-    
-    //array com os icones da collectio view
-    var taskIcons: [Icons] = [
-        .init(name: "Sol", icon: UIImage(systemName: "sun.max") ?? UIImage(), isSelected: false),
-        .init(name: "Lua", icon: UIImage(systemName: "moon") ?? UIImage(), isSelected: false),
-        .init(name: "Café", icon: UIImage(systemName: "cup.and.saucer") ?? UIImage(), isSelected: false),
-        .init(name: "Livro", icon: UIImage(systemName: "book") ?? UIImage(), isSelected: false),
-        .init(name: "Halter", icon: UIImage(systemName: "dumbbell") ?? UIImage(), isSelected: false),
-        .init(name: "Maleta", icon: UIImage(systemName: "briefcase") ?? UIImage(), isSelected: false),
-        .init(name: "Pessoas", icon: UIImage(systemName: "person.2") ?? UIImage(), isSelected: false),
-        .init(name: "Coração", icon: UIImage(systemName: "heart") ?? UIImage(), isSelected: false),
-        .init(name: "Música", icon: UIImage(systemName: "music.note") ?? UIImage(), isSelected: false),
-        .init(name: "Filme", icon: UIImage(systemName: "film") ?? UIImage(), isSelected: false),
-        .init(name: "Compras", icon: UIImage(systemName: "bag") ?? UIImage(), isSelected: false),
-        .init(name: "Carro", icon: UIImage(systemName: "car") ?? UIImage(), isSelected: false)
-    ]
     
     lazy var newTaskCollectionView: UICollectionView = {
         //declarando collection view
@@ -49,10 +23,31 @@ class NewTaskVC: UIViewController {
         collectionView.register(CollectionViewCellWeekPicker.self, forCellWithReuseIdentifier: CollectionViewCellWeekPicker.identifier)
         collectionView.register(CollectionViewCellTaskTIme.self, forCellWithReuseIdentifier: CollectionViewCellTaskTIme.reuseIdentifier)
         collectionView.register(CollectionViewCellTaskIcon.self, forCellWithReuseIdentifier: CollectionViewCellTaskIcon.reuseIdentifier)
+        collectionView.register(CollectionViewCellColors.self, forCellWithReuseIdentifier: CollectionViewCellColors.reuseIdentifier)
 
+        //registro do header
+        collectionView.register(SectionHeaderNewTask.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: SectionHeaderNewTask.reuseIdentifier)
+        
         return collectionView
     }()
+    
+    //botao de criar rotina
+    lazy var createRoutineButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitle("Criar Rotina", for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.backgroundColor = .selectedLavanda
+        button.layer.cornerRadius = 24
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        button.addTarget(self, action: #selector(createRoutineTapped), for: .touchUpInside)
+        return button
+    }()
 
+    @objc func createRoutineTapped() {
+        print("Rotina criada! 🎉")
+    }
+    
     //botao para sair da modal
     lazy var exitButton: UIBarButtonItem = {
         let button = UIBarButtonItem(
@@ -100,6 +95,7 @@ extension NewTaskVC: UICollectionViewDataSource {
             case .dayOfWeek: return weekDays.count
             case .taskTime: return 1
             case .taskIcon: return 12
+            case .taskColor: return taskColorsList.count
         }
     }
     
@@ -139,7 +135,7 @@ extension NewTaskVC: UICollectionViewDataSource {
             return cell
             
         //secao 3
-        case.taskIcon:
+        case .taskIcon:
             guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CollectionViewCellTaskIcon.reuseIdentifier, for: indexPath) as? CollectionViewCellTaskIcon else {
                 fatalError("Erro ao dequer CollectionViewCellTaskTIme")
             }
@@ -147,7 +143,17 @@ extension NewTaskVC: UICollectionViewDataSource {
             cell.config(with: taskIcons[indexPath.item])
             
             return cell
+        
+        //secao 4
+        case .taskColor:
+            guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CollectionViewCellColors.reuseIdentifier, for: indexPath) as? CollectionViewCellColors else {
+                fatalError("Erro ao dequer CollectionViewCellTaskTIme")
+            }
             
+            cell.config(with: taskColorsList[indexPath.item])
+            
+            return cell
+        
         default:
             return UICollectionViewCell()
         }
@@ -155,6 +161,29 @@ extension NewTaskVC: UICollectionViewDataSource {
         
     }
     
+    func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
+        
+        guard kind == UICollectionView.elementKindSectionHeader else { return UICollectionReusableView() }
+        
+        let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: SectionHeaderNewTask.reuseIdentifier, for: indexPath) as! SectionHeaderNewTask
+        
+        switch indexPath.section {
+        case 1:
+            header.titleLabel.text = "Dia da semana"
+            return header
+        case 2:
+            header.titleLabel.text = "Hora"
+            return header
+        case 3:
+            header.titleLabel.text = "Ícone"
+            return header
+        case 4:
+            header.titleLabel.text = "Cor"
+            return header
+        default:
+            return UICollectionReusableView()
+        }
+    }
     
 }
 
@@ -174,6 +203,15 @@ extension NewTaskVC: UICollectionViewDelegate {
                 taskIcons[i].isSelected = (i == indexPath.item)
                 
                 collectionView.reloadSections(IndexSet(integer: 3))
+            }
+        }
+        
+        if indexPath.section == 4 {
+            for i in 0..<taskColorsList.count {
+                taskColorsList[i].isSelected = (i == indexPath.item)
+                
+                collectionView.reloadSections(IndexSet(integer: 4))
+                collectionView.reloadData()
             }
         }
     }
@@ -206,6 +244,19 @@ extension NewTaskVC {
         section.interGroupSpacing = 12
         section.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
         
+        let headerSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .absolute(36)
+        )
+            
+        let header = NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: headerSize,
+            elementKind: UICollectionView.elementKindSectionHeader,
+            alignment: .top
+        )
+            
+        section.boundarySupplementaryItems = [header]
+        
         return section
         
     }
@@ -219,6 +270,20 @@ extension NewTaskVC {
         
         let section = NSCollectionLayoutSection(group: group)
         section.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
+        
+        let headerSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .absolute(36)
+        )
+            
+        let header = NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: headerSize,
+            elementKind: UICollectionView.elementKindSectionHeader,
+            alignment: .top
+        )
+            
+        section.boundarySupplementaryItems = [header]
+        
         return section
     }
     
@@ -234,7 +299,49 @@ extension NewTaskVC {
         section.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
         section.interGroupSpacing = 12
         
+        let headerSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .absolute(36)
+        )
+            
+        let header = NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: headerSize,
+            elementKind: UICollectionView.elementKindSectionHeader,
+            alignment: .top
+        )
+            
+        section.boundarySupplementaryItems = [header]
+        
         return section
+    }
+    
+    func createLayoutSection4() -> NSCollectionLayoutSection {
+        let itemSize =  NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .fractionalHeight(1))
+        let item = NSCollectionLayoutItem(layoutSize: itemSize)
+        
+        let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(0.15), heightDimension: .absolute(40))
+        let group = NSCollectionLayoutGroup.vertical(layoutSize: groupSize, subitems: [item])
+        
+        let section = NSCollectionLayoutSection(group: group)
+        section.interGroupSpacing = 20
+        section.orthogonalScrollingBehavior = .continuous
+        section.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
+        
+        let headerSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .absolute(36)
+        )
+            
+        let header = NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: headerSize,
+            elementKind: UICollectionView.elementKindSectionHeader,
+            alignment: .top
+        )
+            
+        section.boundarySupplementaryItems = [header]
+        
+        return section
+        
     }
     
     func createAllLayout() -> UICollectionViewCompositionalLayout {
@@ -250,6 +357,8 @@ extension NewTaskVC {
                 return self.createLayoutSection2()
             case 3:
                 return self.createLayoutSection3()
+            case 4:
+                return self.createLayoutSection4()
             default:
                 return nil
             }
@@ -263,6 +372,7 @@ extension NewTaskVC {
 extension NewTaskVC: ViewCodeProtocol {
     func addSubViews() {
         view.addSubview(newTaskCollectionView)
+        view.addSubview(createRoutineButton)
     }
     
     func setUptConstraints() {
@@ -270,7 +380,12 @@ extension NewTaskVC: ViewCodeProtocol {
             newTaskCollectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             newTaskCollectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             newTaskCollectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            newTaskCollectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            newTaskCollectionView.bottomAnchor.constraint(equalTo: createRoutineButton.topAnchor, constant: -16),
+                    
+            createRoutineButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            createRoutineButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            createRoutineButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            createRoutineButton.heightAnchor.constraint(equalToConstant: 48)
         ])
     }
 
