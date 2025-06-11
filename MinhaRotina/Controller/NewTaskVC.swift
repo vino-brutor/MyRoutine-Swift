@@ -46,7 +46,64 @@ class NewTaskVC: UIViewController {
 
     @objc func createRoutineTapped() {
         print("Rotina criada! 🎉")
+        
+        guard let  titleCell = newTaskCollectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? CollectionViewCellNewTaskName, let title = titleCell.textFieldTaskName.text, !title.isEmpty else { return }
+        
+        guard let selectedDay = weekDays.first(where: {$0.isSelected}) else { return }
+        var selectedDayReduced: String = ""
+        
+        switch selectedDay.name {
+        case "Domingo":
+            selectedDayReduced = "Dom"
+        case "Segunda":
+            selectedDayReduced = "Seg"
+        case "Terça":
+            selectedDayReduced = "Ter"
+        case "Quarta":
+            selectedDayReduced = "Qua"
+        case "Quinta":
+            selectedDayReduced = "Qui"
+        case "Sexta":
+            selectedDayReduced = "Sex"
+        case "Sábado":
+            selectedDayReduced = "Sáb"
+        default :
+            break
+        }
+        
+        
+        guard let timeCell = newTaskCollectionView.cellForItem(at: IndexPath(item: 0, section: 2)) as? CollectionViewCellTaskTIme else { return }
+        let selectedTime = timeCell.hourPicker.date
+        
+        guard let selectedIcon = taskIcons.first(where: { $0.isSelected }) else { return }
+        
+        guard let selectedColor = taskColorsList.first(where: { $0.isSelected }) else { return }
+        
+        print(selectedDayReduced)
+        
+        Persistence.shared.addTask(title: title, dayOfTheWeek: selectedDayReduced, time: selectedTime, icon: selectedIcon.name, colorName: selectedColor.name)
+        
+        
+           titleCell.textFieldTaskName.text = ""
+           timeCell.hourPicker.date = Date()
+           
+           for i in 0..<weekDays.count {
+               weekDays[i].isSelected = false
+           }
+           for i in 0..<taskIcons.count {
+               taskIcons[i].isSelected = false
+           }
+           for i in 0..<taskColorsList.count {
+               taskColorsList[i].isSelected = false
+           }
+
+           newTaskCollectionView.reloadData()
+        
+        dismiss(animated: true)
+        
     }
+    
+    
     
     //botao para sair da modal
     lazy var exitButton: UIBarButtonItem = {
@@ -74,11 +131,20 @@ class NewTaskVC: UIViewController {
             .font: UIFont.systemFont(ofSize: 20, weight: .bold)
         ]
         navigationItem.rightBarButtonItem = exitButton
+        
+        let tapDissmisKeyboard = UITapGestureRecognizer(target: self, action: #selector(dissmisKeyboard))
+        tapDissmisKeyboard.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapDissmisKeyboard)
+        
         addSubViews()
         setUptConstraints()
         
     }
     
+    @objc func dissmisKeyboard() {
+        print("toquei")
+        view.endEditing(true)
+    }
 }
 
 extension NewTaskVC: UICollectionViewDataSource {

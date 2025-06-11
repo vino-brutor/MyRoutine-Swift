@@ -5,13 +5,7 @@
 //  Created by Vítor Bruno on 28/05/25.
 //
 
-struct Task {
-    var title: String
-    var dayOfTheWeek: Int
-    var color: Int
-    var time: String
-    var icon: String
-}
+import Foundation
 
 enum newTaskSection: Int, CaseIterable {
     case taskName = 0

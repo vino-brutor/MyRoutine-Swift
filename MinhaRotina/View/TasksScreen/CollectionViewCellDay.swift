@@ -19,8 +19,11 @@ class CollectionViewCellDay: UICollectionViewCell {
         return label
     }()
     
-    func config(dayOfTheWeekName: String){
-        labelDayOfTheWeek.text = dayOfTheWeekName
+    func config(with day: Day){
+        labelDayOfTheWeek.text = day.name
+        contentView.backgroundColor = day.isSelected ? .selectedLavanda : .cardLavanda
+        contentView.layer.borderWidth = day.isSelected ? 2 : 0
+        contentView.layer.borderColor = UIColor.white.cgColor
     }
     
     override init(frame: CGRect) {

@@ -17,7 +17,7 @@ class CollectionViewCellTaskTIme: UICollectionViewCell {
         datePicker.preferredDatePickerStyle = .wheels
         datePicker.datePickerMode = .time
         datePicker.locale = Locale(identifier: "pt_BR")
-        datePicker.tintColor = .cardLavanda
+        datePicker.setValue(UIColor(.cardLavanda), forKey: "textColor")
         return datePicker
     }()
     

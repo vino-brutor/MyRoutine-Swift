@@ -6,14 +6,16 @@
 //
 
 import UIKit
+import CoreData
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-
-
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        let context = persistenceContainer.viewContext
+        Persistence.shared.context = context
+        
         return true
     }
 
@@ -31,6 +33,33 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
     }
 
+    lazy var persistenceContainer: NSPersistentContainer = {
+        let container = NSPersistentContainer(name: "MinhaRotinaModel")
+        
+        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
+            if let error = error as NSError? {
+                fatalError()
+            }
+        })
+      
+        return container
+    }()
 
+    func context() -> NSManagedObjectContext {
+        return persistenceContainer.viewContext
+    }
+    
+    func saveContext () {
+        let context = persistenceContainer.viewContext
+        
+        if context.hasChanges {
+            do {
+                try context.save()
+            }catch {
+                let nsError = error as NSError
+                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            }
+        }
+    }
 }
 
