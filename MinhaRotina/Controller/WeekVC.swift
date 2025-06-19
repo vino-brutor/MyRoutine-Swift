@@ -52,6 +52,8 @@ class WeekVC: UIViewController {
         navigationController?.navigationBar.standardAppearance = appearance
         navigationController?.navigationBar.scrollEdgeAppearance = appearance
         
+        
+        
         addSubViews()
         setUptConstraints()
     }
@@ -141,16 +143,17 @@ extension WeekVC: UICollectionViewDataSource {
             let allTasksOfTheDay  = (Persistence.shared.getTaskByDay(by: selectedDay) ?? []).sorted {($0.time ?? Date()) < ($1.time ?? Date())}
             
             cell.config(with: allTasksOfTheDay[indexPath.item])
+            
+            let task = allTasksOfTheDay[indexPath.item]
             cell.onDeleteTapped = {
-                let tasks = Persistence.shared.getTaskByDay(by: self.selectedDay) ?? []
-                let taskToDelete = tasks[indexPath.item]
-                guard let id = tasks[indexPath.item].id else {fatalError()}
-                
-                Persistence.shared.deleteTask(by: id)
-                
-                self.dayCollectionView.performBatchUpdates {
-                    self.dayCollectionView.deleteItems(at: [indexPath])
-                }
+                guard let id = task.id else { return }
+
+                    Persistence.shared.deleteTask(by: id)
+
+                    // Atualize a fonte de dados
+                    let tasksAfter = Persistence.shared.getTaskByDay(by: self.selectedDay) ?? []
+
+                self.dayCollectionView.reloadSections(IndexSet(integer: 1))
             }
             
             

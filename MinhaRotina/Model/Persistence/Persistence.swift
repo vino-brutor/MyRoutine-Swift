@@ -62,6 +62,22 @@ class Persistence {
         }
     }
     
+    func getLastTask() -> Task? {
+        guard let context else { return nil }
+        
+        let fetchRequest: NSFetchRequest<Task> = Task.fetchRequest()
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "time", ascending: false)]
+        fetchRequest.fetchLimit = 1
+        
+        do {
+            return try context.fetch(fetchRequest).first
+        } catch {
+            print(error)
+            return nil
+        }
+        
+    }
+    
     func getTaskByDay(by dayName: String) -> [Task]? {
         guard let context else { return nil}
         

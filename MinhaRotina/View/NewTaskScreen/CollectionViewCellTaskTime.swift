@@ -10,16 +10,23 @@ import UIKit
 class CollectionViewCellTaskTIme: UICollectionViewCell {
     
     static let reuseIdentifier = "CollectionViewCellTaskTIme"
+    var onTimeChanged: ((Date) -> Void)?
     
     lazy var hourPicker: UIDatePicker = {
         let datePicker = UIDatePicker()
         datePicker.translatesAutoresizingMaskIntoConstraints = false
         datePicker.preferredDatePickerStyle = .wheels
         datePicker.datePickerMode = .time
+        datePicker.date = Date()
+        datePicker.addTarget(self, action: #selector(timeChanged(_:)), for: .valueChanged)
         datePicker.locale = Locale(identifier: "pt_BR")
         datePicker.setValue(UIColor(.cardLavanda), forKey: "textColor")
         return datePicker
     }()
+    
+    @objc func timeChanged(_ sender: UIDatePicker) {
+        onTimeChanged?(sender.date)
+    }
     
     override init(frame: CGRect) {
         super.init(frame: frame)

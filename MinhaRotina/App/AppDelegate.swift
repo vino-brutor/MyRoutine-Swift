@@ -7,14 +7,33 @@
 
 import UIKit
 import CoreData
+import UserNotifications
 
 @main
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
 
+    func requestNotificationPermission() {
+        //pede a atuorização
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if let error = error {
+                print("Erro ao pedir permissão para notificações: \(error)")
+            }
+            print("Autoriação concedida? \(granted)")
+        }
+        UNUserNotificationCenter.current().delegate = self
+    }
+    
+    //delegate pra mostrar a notificacao mesmo com o app aberto
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound])
+    }
+    
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         let context = persistenceContainer.viewContext
         Persistence.shared.context = context
+        
+        requestNotificationPermission()
         
         return true
     }

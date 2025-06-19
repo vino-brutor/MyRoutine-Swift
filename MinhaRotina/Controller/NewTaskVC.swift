@@ -6,9 +6,11 @@
 //
 
 import UIKit
+import Foundation
 
 class NewTaskVC: UIViewController {
     
+    var selectedTime: Date?
     
     lazy var newTaskCollectionView: UICollectionView = {
         //declarando collection view
@@ -17,14 +19,14 @@ class NewTaskVC: UIViewController {
         collectionView.dataSource = self
         collectionView.delegate = self
         collectionView.backgroundColor = .backgroundLavanda
-
+        
         //registrando as celulas
         collectionView.register(CollectionViewCellNewTaskName.self, forCellWithReuseIdentifier: CollectionViewCellNewTaskName.identifier)
         collectionView.register(CollectionViewCellWeekPicker.self, forCellWithReuseIdentifier: CollectionViewCellWeekPicker.identifier)
         collectionView.register(CollectionViewCellTaskTIme.self, forCellWithReuseIdentifier: CollectionViewCellTaskTIme.reuseIdentifier)
         collectionView.register(CollectionViewCellTaskIcon.self, forCellWithReuseIdentifier: CollectionViewCellTaskIcon.reuseIdentifier)
         collectionView.register(CollectionViewCellColors.self, forCellWithReuseIdentifier: CollectionViewCellColors.reuseIdentifier)
-
+        
         //registro do header
         collectionView.register(SectionHeaderNewTask.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: SectionHeaderNewTask.reuseIdentifier)
         
@@ -43,67 +45,69 @@ class NewTaskVC: UIViewController {
         button.addTarget(self, action: #selector(createRoutineTapped), for: .touchUpInside)
         return button
     }()
-
+    
     @objc func createRoutineTapped() {
-        print("Rotina criada! 🎉")
         
         guard let  titleCell = newTaskCollectionView.cellForItem(at: IndexPath(item: 0, section: 0)) as? CollectionViewCellNewTaskName, let title = titleCell.textFieldTaskName.text, !title.isEmpty else { return }
         
-        guard let selectedDay = weekDays.first(where: {$0.isSelected}) else { return }
-        var selectedDayReduced: String = ""
-        
-        switch selectedDay.name {
-        case "Domingo":
-            selectedDayReduced = "Dom"
-        case "Segunda":
-            selectedDayReduced = "Seg"
-        case "Terça":
-            selectedDayReduced = "Ter"
-        case "Quarta":
-            selectedDayReduced = "Qua"
-        case "Quinta":
-            selectedDayReduced = "Qui"
-        case "Sexta":
-            selectedDayReduced = "Sex"
-        case "Sábado":
-            selectedDayReduced = "Sáb"
-        default :
-            break
-        }
-        
-        
         guard let timeCell = newTaskCollectionView.cellForItem(at: IndexPath(item: 0, section: 2)) as? CollectionViewCellTaskTIme else { return }
-        let selectedTime = timeCell.hourPicker.date
+        guard let selectedTime = selectedTime else { return }
         
         guard let selectedIcon = taskIcons.first(where: { $0.isSelected }) else { return }
         
         guard let selectedColor = taskColorsList.first(where: { $0.isSelected }) else { return }
         
-        print(selectedDayReduced)
+        let selectedDays = weekDays.filter({$0.isSelected})
+        guard !selectedDays.isEmpty else { return }
+        var selectedDayReduced: String = ""
         
-        Persistence.shared.addTask(title: title, dayOfTheWeek: selectedDayReduced, time: selectedTime, icon: selectedIcon.name, colorName: selectedColor.name)
+        for day in selectedDays {
+            
+            switch day.name {
+            case "Domingo":
+                selectedDayReduced = "Dom"
+            case "Segunda":
+                selectedDayReduced = "Seg"
+            case "Terça":
+                selectedDayReduced = "Ter"
+            case "Quarta":
+                selectedDayReduced = "Qua"
+            case "Quinta":
+                selectedDayReduced = "Qui"
+            case "Sexta":
+                selectedDayReduced = "Sex"
+            case "Sábado":
+                selectedDayReduced = "Sáb"
+            default :
+                break
+            }
+            
+            Persistence.shared.addTask(title: title, dayOfTheWeek: selectedDayReduced, time: selectedTime, icon: selectedIcon.name, colorName: selectedColor.name)
+            
+            if let taskAdded = Persistence.shared.getLastTask() {
+                NotificationManager.shared.scheduleNotification(with: taskAdded)
+            }
+            print("Rotina criada! 🎉")
+        }
+    
+        titleCell.textFieldTaskName.text = ""
+        timeCell.hourPicker.date = Date()
         
+        for i in 0..<weekDays.count {
+            weekDays[i].isSelected = false
+        }
+        for i in 0..<taskIcons.count {
+            taskIcons[i].isSelected = false
+        }
+        for i in 0..<taskColorsList.count {
+            taskColorsList[i].isSelected = false
+        }
         
-           titleCell.textFieldTaskName.text = ""
-           timeCell.hourPicker.date = Date()
-           
-           for i in 0..<weekDays.count {
-               weekDays[i].isSelected = false
-           }
-           for i in 0..<taskIcons.count {
-               taskIcons[i].isSelected = false
-           }
-           for i in 0..<taskColorsList.count {
-               taskColorsList[i].isSelected = false
-           }
-
-           newTaskCollectionView.reloadData()
+        newTaskCollectionView.reloadData()
         
         dismiss(animated: true)
         
     }
-    
-    
     
     //botao para sair da modal
     lazy var exitButton: UIBarButtonItem = {
@@ -157,11 +161,11 @@ extension NewTaskVC: UICollectionViewDataSource {
         guard let inpuType = newTaskSection(rawValue: section) else { return 0 }
         
         switch inpuType {
-            case .taskName: return 1
-            case .dayOfWeek: return weekDays.count
-            case .taskTime: return 1
-            case .taskIcon: return 12
-            case .taskColor: return taskColorsList.count
+        case .taskName: return 1
+        case .dayOfWeek: return weekDays.count
+        case .taskTime: return 1
+        case .taskIcon: return 12
+        case .taskColor: return taskColorsList.count
         }
     }
     
@@ -169,9 +173,9 @@ extension NewTaskVC: UICollectionViewDataSource {
         guard let section = newTaskSection(rawValue: indexPath.section) else {
             fatalError("Section inválida")
         }
-
+        
         switch section {
-        //secao 0
+            //secao 0
         case .taskName:
             print("Montando célula de taskName")
             guard let cell = collectionView.dequeueReusableCell(
@@ -181,8 +185,8 @@ extension NewTaskVC: UICollectionViewDataSource {
                 fatalError("Erro ao dequeuer CollectionViewCellNewTaskName")
             }
             return cell
-        
-        //secao 1
+            
+            //secao 1
         case .dayOfWeek:
             guard let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: CollectionViewCellWeekPicker.identifier,
@@ -193,14 +197,17 @@ extension NewTaskVC: UICollectionViewDataSource {
             cell.config(with: weekDays[indexPath.item])
             return cell
             
-        //secao 2
+            //secao 2
         case .taskTime:
             guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CollectionViewCellTaskTIme.reuseIdentifier, for: indexPath) as? CollectionViewCellTaskTIme else {
                 fatalError("Erro ao dequer CollectionViewCellTaskTIme")
             }
+            cell.onTimeChanged = { [weak self] date in
+                self?.selectedTime = date
+            }
             return cell
             
-        //secao 3
+            //secao 3
         case .taskIcon:
             guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CollectionViewCellTaskIcon.reuseIdentifier, for: indexPath) as? CollectionViewCellTaskIcon else {
                 fatalError("Erro ao dequer CollectionViewCellTaskTIme")
@@ -209,8 +216,8 @@ extension NewTaskVC: UICollectionViewDataSource {
             cell.config(with: taskIcons[indexPath.item])
             
             return cell
-        
-        //secao 4
+            
+            //secao 4
         case .taskColor:
             guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CollectionViewCellColors.reuseIdentifier, for: indexPath) as? CollectionViewCellColors else {
                 fatalError("Erro ao dequer CollectionViewCellTaskTIme")
@@ -219,7 +226,7 @@ extension NewTaskVC: UICollectionViewDataSource {
             cell.config(with: taskColorsList[indexPath.item])
             
             return cell
-        
+            
         default:
             return UICollectionViewCell()
         }
@@ -257,10 +264,7 @@ extension NewTaskVC: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
         if indexPath.section == 1 {
-            for i in 0..<weekDays.count {
-                weekDays[i].isSelected = (i == indexPath.item)
-            }
-            
+            weekDays[indexPath.item].isSelected.toggle()
             collectionView.reloadSections(IndexSet(integer: 1))
         }
         
@@ -314,13 +318,13 @@ extension NewTaskVC {
             widthDimension: .fractionalWidth(1.0),
             heightDimension: .absolute(36)
         )
-            
+        
         let header = NSCollectionLayoutBoundarySupplementaryItem(
             layoutSize: headerSize,
             elementKind: UICollectionView.elementKindSectionHeader,
             alignment: .top
         )
-            
+        
         section.boundarySupplementaryItems = [header]
         
         return section
@@ -341,13 +345,13 @@ extension NewTaskVC {
             widthDimension: .fractionalWidth(1.0),
             heightDimension: .absolute(36)
         )
-            
+        
         let header = NSCollectionLayoutBoundarySupplementaryItem(
             layoutSize: headerSize,
             elementKind: UICollectionView.elementKindSectionHeader,
             alignment: .top
         )
-            
+        
         section.boundarySupplementaryItems = [header]
         
         return section
@@ -369,13 +373,13 @@ extension NewTaskVC {
             widthDimension: .fractionalWidth(1.0),
             heightDimension: .absolute(36)
         )
-            
+        
         let header = NSCollectionLayoutBoundarySupplementaryItem(
             layoutSize: headerSize,
             elementKind: UICollectionView.elementKindSectionHeader,
             alignment: .top
         )
-            
+        
         section.boundarySupplementaryItems = [header]
         
         return section
@@ -397,13 +401,13 @@ extension NewTaskVC {
             widthDimension: .fractionalWidth(1.0),
             heightDimension: .absolute(36)
         )
-            
+        
         let header = NSCollectionLayoutBoundarySupplementaryItem(
             layoutSize: headerSize,
             elementKind: UICollectionView.elementKindSectionHeader,
             alignment: .top
         )
-            
+        
         section.boundarySupplementaryItems = [header]
         
         return section
@@ -447,14 +451,14 @@ extension NewTaskVC: ViewCodeProtocol {
             newTaskCollectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             newTaskCollectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             newTaskCollectionView.bottomAnchor.constraint(equalTo: createRoutineButton.topAnchor, constant: -16),
-                    
+            
             createRoutineButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             createRoutineButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             createRoutineButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
             createRoutineButton.heightAnchor.constraint(equalToConstant: 48)
         ])
     }
-
+    
 }
 
 
