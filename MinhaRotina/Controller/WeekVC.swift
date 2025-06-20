@@ -3,6 +3,7 @@ import CoreData
 
 class WeekVC: UIViewController {
     
+    var isDragginTask: Bool = false
     var selectedDay: String = ""
     
     var weekDays = [Day(name: "Dom", isSelected: false), Day(name: "Seg", isSelected: false), Day(name: "Ter", isSelected: false), Day(name: "Qua", isSelected: false), Day(name: "Qui", isSelected: false), Day(name: "Sex", isSelected: false), Day(name: "Sáb", isSelected: false)]
@@ -12,6 +13,9 @@ class WeekVC: UIViewController {
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         collectionView.dataSource = self
         collectionView.delegate = self
+        collectionView.dragDelegate = self
+        collectionView.dropDelegate = self
+        collectionView.dragInteractionEnabled = true
         collectionView.register(CollectionViewCellDay.self, forCellWithReuseIdentifier: CollectionViewCellDay.identifier)
         collectionView.register(CollectionViewCellTaskOfTheDay.self, forCellWithReuseIdentifier: CollectionViewCellTaskOfTheDay.identifier)
         collectionView.backgroundColor = .backgroundLavanda
@@ -52,10 +56,31 @@ class WeekVC: UIViewController {
         navigationController?.navigationBar.standardAppearance = appearance
         navigationController?.navigationBar.scrollEdgeAppearance = appearance
         
-        
-        
         addSubViews()
         setUptConstraints()
+        setTodayAsCurrentDay()
+    }
+    
+    func setTodayAsCurrentDay(){
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateFormat = "E"
+        
+        let todayName = formatter.string(from: Date()).capitalized
+        print(todayName)
+        
+        for i in 0..<weekDays.count {
+            weekDays[i].isSelected = ((weekDays[i].name + ".") == todayName) //ve qual o dia se iguala ao dia de hoje
+        }
+        
+        DispatchQueue.main.async {
+            if let index = self.weekDays.firstIndex(where: { ($0.name + ".") == todayName }){
+                self.selectedDay = self.weekDays[index].name
+                let indexPath = IndexPath(item: index, section: 0)
+                self.dayCollectionView.selectItem(at: indexPath, animated: true, scrollPosition: .centeredHorizontally)
+                self.dayCollectionView.reloadSections(IndexSet(integer: 1))
+            }
+        }
     }
     
     @objc func refreshTasks() {
@@ -91,8 +116,6 @@ extension WeekVC {
         let section = NSCollectionLayoutSection(group: group)
         section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
         section.interGroupSpacing = 12
-        
-        
         
         return section
     }
@@ -147,12 +170,12 @@ extension WeekVC: UICollectionViewDataSource {
             let task = allTasksOfTheDay[indexPath.item]
             cell.onDeleteTapped = {
                 guard let id = task.id else { return }
-
-                    Persistence.shared.deleteTask(by: id)
-
-                    // Atualize a fonte de dados
-                    let tasksAfter = Persistence.shared.getTaskByDay(by: self.selectedDay) ?? []
-
+                
+                Persistence.shared.deleteTask(by: id)
+                
+                // Atualize a fonte de dados
+                let tasksAfter = Persistence.shared.getTaskByDay(by: self.selectedDay) ?? []
+                
                 self.dayCollectionView.reloadSections(IndexSet(integer: 1))
             }
             
@@ -175,14 +198,54 @@ extension WeekVC: UICollectionViewDelegate {
             }
             
             selectedDay = weekDays[indexPath.item].name
-            print(selectedDay)
-            let tasks = Persistence.shared.getTaskByDay(by: selectedDay) ?? []
-            print("Tarefas de \(selectedDay): \(tasks.map { $0.title ?? "" })")
-            collectionView.reloadData()
-            collectionView.reloadSections(IndexSet(integer: 1))
+            weekDays.indices.forEach { weekDays[$0].isSelected = ($0 == indexPath.item) }
+
+            dayCollectionView.reloadItems(at: [indexPath])
+            dayCollectionView.reloadSections(IndexSet(integer: 1))
         }
     }
     
+}
+
+extension WeekVC: UICollectionViewDragDelegate, UICollectionViewDropDelegate {
+    func collectionView(_ collectionView: UICollectionView, itemsForBeginning session: UIDragSession, at indexPath: IndexPath) -> [UIDragItem] {
+         guard indexPath.section == 1,
+               let task = Persistence.shared.getTaskByDay(by: selectedDay)?
+                 .sorted(by: { $0.orderIndex < $1.orderIndex })[indexPath.item] else {
+             return []
+         }
+         let provider = NSItemProvider(object: task.id!.uuidString as NSString)
+         let item = UIDragItem(itemProvider: provider)
+         item.localObject = task
+         return [item]
+     }
+
+     func collectionView(_ collectionView: UICollectionView, performDropWith coordinator: UICollectionViewDropCoordinator) {
+         guard coordinator.proposal.operation == .move,
+               let dest = coordinator.destinationIndexPath,
+               let item = coordinator.items.first,
+               let source = item.sourceIndexPath,
+               let task = item.dragItem.localObject as? Task else {
+             return
+         }
+
+         collectionView.performBatchUpdates {
+             var tasks = Persistence.shared.getTaskByDay(by: selectedDay)?
+                 .sorted(by: { $0.orderIndex < $1.orderIndex }) ?? []
+
+             tasks.remove(at: source.item)
+             tasks.insert(task, at: dest.item)
+             Persistence.shared.updateTaskOrder(for: selectedDay, newOrder: tasks)
+             collectionView.reloadItems(at: [source, dest])
+         }
+
+         coordinator.drop(item.dragItem, toItemAt: dest)
+     }
+
+     func collectionView(_ collectionView: UICollectionView, dropSessionDidUpdate session: UIDropSession,
+                         withDestinationIndexPath destinationIndexPath: IndexPath?) -> UICollectionViewDropProposal {
+         return UICollectionViewDropProposal(operation: .move, intent: .insertAtDestinationIndexPath)
+     }
 }
 
 // MARK: - View Code

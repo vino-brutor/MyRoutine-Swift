@@ -17,10 +17,16 @@ class Persistence {
         newTask.time = time
         newTask.iconName = icon
         newTask.colorName = colorName
+        newTask.orderIndex = getMaxOrderIndex(for: dayOfTheWeek) + 1
         
         print(newTask)
         
         save()
+    }
+    
+    func getMaxOrderIndex(for day: String) -> Int64 {
+        let tasks = getTaskByDay(by: day) ?? []
+        return tasks.map { $0.orderIndex }.max() ?? -1
     }
     
     func getAllTasks() -> [Task]{
@@ -29,6 +35,8 @@ class Persistence {
         var result: [Task]
         
         do {
+            
+            
             result = try context.fetch(Task.fetchRequest())
         } catch {
             print(error)
@@ -75,7 +83,6 @@ class Persistence {
             print(error)
             return nil
         }
-        
     }
     
     func getTaskByDay(by dayName: String) -> [Task]? {
@@ -87,7 +94,7 @@ class Persistence {
             let fetchRequest: NSFetchRequest<Task> = Task.fetchRequest()
             fetchRequest.predicate = NSPredicate(format: "dayOfTheWeek == %@", dayName)
             
-            let sortDescriptor = NSSortDescriptor(key: "time", ascending: true)
+            let sortDescriptor = NSSortDescriptor(key: "orderIndex", ascending: true) //na ordem do index
             fetchRequest.sortDescriptors = [sortDescriptor]
             
             result = try context.fetch(fetchRequest)
@@ -97,6 +104,15 @@ class Persistence {
         }
         
         return result
+    }
+    
+    func updateTaskOrder(for day: String, newOrder: [Task]){
+        
+        for (index, task) in newOrder.enumerated() {
+            task.orderIndex = Int64(index)
+        }
+        
+        save()
     }
     
     func save() {
