@@ -189,19 +189,10 @@ extension WeekVC: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
         if indexPath.section ==  0 {
-            for i in 0..<weekDays.count {
-                if i == indexPath.item {
-                    weekDays[i].isSelected = true
-                } else {
-                    weekDays[i].isSelected = false
-                }
-            }
-            
             selectedDay = weekDays[indexPath.item].name
             weekDays.indices.forEach { weekDays[$0].isSelected = ($0 == indexPath.item) }
 
-            dayCollectionView.reloadItems(at: [indexPath])
-            dayCollectionView.reloadSections(IndexSet(integer: 1))
+            dayCollectionView.reloadSections(IndexSet([0, 1]))
         }
     }
     
@@ -259,7 +250,7 @@ extension WeekVC: ViewCodeProtocol {
             dayCollectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             dayCollectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             dayCollectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-            dayCollectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            dayCollectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
     }
 }
